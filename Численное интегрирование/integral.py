@@ -11,6 +11,10 @@ def f(x):
     # Замена x -> x²: cos(x) / √x -> 2cos(x²), отрезок 0 - 1
     return 2*np.cos(x**2)
 
+# Быстро осциллирующая функция lnx*cos(100x), f(x) = lnx
+def fast_oscil(x):
+    return np.log(x)
+
 # Прямоугольник
 def rectangles(x, y):
     """Левые прямоугольники для табличной функции"""
@@ -91,6 +95,41 @@ def analytic_integral(func, a, b, n = 100):
     
     return simpson(x, y)
 
+
+def filon_cos(func, a, b, w, N):
+    if N % 2 != 0:
+        N = N + 1
+    
+    h = (b - a) / N
+    theta = w * h
+    
+    if abs(theta) < 1e-12:
+        alpha = 2/3 - 2*theta**2/15 + 2*theta**4/105
+        beta = 4/3 + 2*theta**2/15 - 4*theta**4/105
+        gamma = 2/3 - 2*theta**2/15 + 2*theta**4/105
+    else:
+        sin_theta = np.sin(theta)
+        cos_theta = np.cos(theta)
+        theta2 = theta**2
+        theta3 = theta**3
+        
+        alpha = (theta2 + theta*sin_theta*cos_theta - 2*sin_theta**2) / theta3
+        beta = 2*(theta*(1 + cos_theta**2) - 2*sin_theta*cos_theta) / theta3
+        gamma = 4*(sin_theta - theta*cos_theta) / theta3
+    
+    x = np.linspace(a, b, N+1)
+    f = func(x)
+    
+    S_even = np.sum(f[2:-1:2] * np.cos(w * x[2:-1:2]))
+    S_odd = np.sum(f[1:-1:2] * np.cos(w * x[1:-1:2]))
+    
+    boundary = f[0] * np.sin(w*a) - f[-1] * np.sin(w*b)
+    
+    integral = h * (alpha * boundary + beta * S_even + gamma * S_odd)
+    
+    return integral
+
+
 print("Численные интегралы для табличной функции y(x) на [0,2]:")
 print("Прямоугольники :", rectangles(x,y))
 print("Трапеции       :", trapezoidal(x,y))
@@ -98,6 +137,7 @@ print("Симпсон        :", simpson(x,y))
 print("Гаусс 4 точки  :", gauss4(x,y))
 print("Монте-Карло    :", monte_carlo(x,y))
 print("\nНесобственный ∫₀¹ cos x / √x dx =", analytic_integral(f, 0, 1))
+print("\nБыстро осциллирующая функция lnx*cos(100x) на отрезке [1, 2]:", filon_cos(fast_oscil, 1, 2, 100, 40))
 
 x_fine = np.linspace(0,2,500)
 y_spline = sp.natural_cubic_spline(x,y,x_fine)
